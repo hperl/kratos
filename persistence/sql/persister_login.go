@@ -54,6 +54,9 @@ func (p *Persister) ForceLoginFlow(ctx context.Context, id uuid.UUID) error {
 	defer span.End()
 
 	return p.Transaction(ctx, func(ctx context.Context, tx *pop.Connection) error {
+		ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.ForceLoginFlow")
+		defer span.End()
+
 		lr, err := p.GetLoginFlow(ctx, id)
 		if err != nil {
 			return err

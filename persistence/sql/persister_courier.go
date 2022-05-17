@@ -21,7 +21,6 @@ var _ courier.Persister = new(Persister)
 func (p *Persister) AddMessage(ctx context.Context, m *courier.Message) error {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.AddMessage")
 	defer span.End()
-
 	m.NID = corp.ContextualizeNID(ctx, p.nid)
 	m.Status = courier.MessageStatusQueued
 	return sqlcon.HandleError(p.GetConnection(ctx).Create(m)) // do not create eager to avoid identity injection.
@@ -32,6 +31,8 @@ func (p *Persister) NextMessages(ctx context.Context, limit uint8) (messages []c
 	defer span.End()
 
 	if err := p.Transaction(ctx, func(ctx context.Context, tx *pop.Connection) error {
+		ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.NextMessages")
+		defer span.End()
 		var m []courier.Message
 		if err := tx.
 			Where("nid = ? AND status = ?",
@@ -75,7 +76,6 @@ func (p *Persister) NextMessages(ctx context.Context, limit uint8) (messages []c
 func (p *Persister) LatestQueuedMessage(ctx context.Context) (*courier.Message, error) {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.LatestQueuedMessage")
 	defer span.End()
-
 	var m courier.Message
 	if err := p.GetConnection(ctx).
 		Where("nid = ? AND status = ?",
@@ -96,7 +96,6 @@ func (p *Persister) LatestQueuedMessage(ctx context.Context) (*courier.Message, 
 func (p *Persister) SetMessageStatus(ctx context.Context, id uuid.UUID, ms courier.MessageStatus) error {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.SetMessageStatus")
 	defer span.End()
-
 	count, err := p.GetConnection(ctx).RawQuery(
 		// #nosec G201
 		fmt.Sprintf(

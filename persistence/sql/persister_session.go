@@ -50,6 +50,9 @@ func (p *Persister) ListSessionsByIdentity(ctx context.Context, iID uuid.UUID, a
 	nid := corp.ContextualizeNID(ctx, p.nid)
 
 	if err := p.Transaction(ctx, func(ctx context.Context, c *pop.Connection) error {
+		ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.ListSessionsByIdentity")
+		defer span.End()
+
 		q := c.Where("identity_id = ? AND nid = ?", iID, nid).Paginate(page, perPage)
 		if except != uuid.Nil {
 			q = q.Where("id != ?", except)

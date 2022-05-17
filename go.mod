@@ -15,7 +15,6 @@ replace (
 	// official SDK, allowing for the Ory CLI to consume Ory Kratos' CLI commands.
 	github.com/ory/kratos-client-go => ./internal/httpclient
 
-	github.com/ory/x => github.com/icyphox/x v0.0.371-0.20220516105449-f5577a77e6c1
 	go.mongodb.org/mongo-driver => go.mongodb.org/mongo-driver v1.4.6
 	golang.org/x/sys => golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8
 	gopkg.in/DataDog/dd-trace-go.v1 => gopkg.in/DataDog/dd-trace-go.v1 v1.27.1-0.20201005154917-54b73b3e126a

@@ -34,7 +34,6 @@ var _ identity.PrivilegedPool = new(Persister)
 func (p *Persister) ListVerifiableAddresses(ctx context.Context, page, itemsPerPage int) (a []identity.VerifiableAddress, err error) {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.ListVerifiableAddresses")
 	defer span.End()
-
 	if err := p.GetConnection(ctx).Where("nid = ?", corp.ContextualizeNID(ctx, p.nid)).Order("id DESC").Paginate(page, x.MaxItemsPerPage(itemsPerPage)).All(&a); err != nil {
 		return nil, sqlcon.HandleError(err)
 	}
@@ -45,7 +44,6 @@ func (p *Persister) ListVerifiableAddresses(ctx context.Context, page, itemsPerP
 func (p *Persister) ListRecoveryAddresses(ctx context.Context, page, itemsPerPage int) (a []identity.RecoveryAddress, err error) {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.ListRecoveryAddresses")
 	defer span.End()
-
 	if err := p.GetConnection(ctx).Where("nid = ?", corp.ContextualizeNID(ctx, p.nid)).Order("id DESC").Paginate(page, x.MaxItemsPerPage(itemsPerPage)).All(&a); err != nil {
 		return nil, sqlcon.HandleError(err)
 	}
@@ -283,6 +281,9 @@ func (p *Persister) CreateIdentity(ctx context.Context, i *identity.Identity) er
 	}
 
 	return p.Transaction(ctx, func(ctx context.Context, tx *pop.Connection) error {
+		ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.CreateIdentity")
+		defer span.End()
+
 		if err := tx.Create(i); err != nil {
 			return sqlcon.HandleError(err)
 		}
@@ -346,6 +347,9 @@ func (p *Persister) UpdateIdentity(ctx context.Context, i *identity.Identity) er
 
 	i.NID = corp.ContextualizeNID(ctx, p.nid)
 	return sqlcon.HandleError(p.Transaction(ctx, func(ctx context.Context, tx *pop.Connection) error {
+		ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.UpdateIdentity")
+		defer span.End()
+
 		if count, err := tx.Where("id = ? AND nid = ?", i.ID, corp.ContextualizeNID(ctx, p.nid)).Count(i); err != nil {
 			return err
 		} else if count == 0 {
@@ -416,7 +420,6 @@ func (p *Persister) GetIdentity(ctx context.Context, id uuid.UUID) (*identity.Id
 func (p *Persister) GetIdentityConfidential(ctx context.Context, id uuid.UUID) (*identity.Identity, error) {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.GetIdentityConfidential")
 	defer span.End()
-
 	var i identity.Identity
 
 	nid := corp.ContextualizeNID(ctx, p.nid)
@@ -473,7 +476,6 @@ func (p *Persister) GetIdentityConfidential(ctx context.Context, id uuid.UUID) (
 func (p *Persister) FindVerifiableAddressByValue(ctx context.Context, via identity.VerifiableAddressType, value string) (*identity.VerifiableAddress, error) {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.FindVerifiableAddressByValue")
 	defer span.End()
-
 	var address identity.VerifiableAddress
 	if err := p.GetConnection(ctx).Where("nid = ? AND via = ? AND value = ?", corp.ContextualizeNID(ctx, p.nid), via, stringToLowerTrim(value)).First(&address); err != nil {
 		return nil, sqlcon.HandleError(err)
@@ -485,7 +487,6 @@ func (p *Persister) FindVerifiableAddressByValue(ctx context.Context, via identi
 func (p *Persister) FindRecoveryAddressByValue(ctx context.Context, via identity.RecoveryAddressType, value string) (*identity.RecoveryAddress, error) {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.FindRecoveryAddressByValue")
 	defer span.End()
-
 	var address identity.RecoveryAddress
 	if err := p.GetConnection(ctx).Where("nid = ? AND via = ? AND value = ?", corp.ContextualizeNID(ctx, p.nid), via, stringToLowerTrim(value)).First(&address); err != nil {
 		return nil, sqlcon.HandleError(err)
@@ -527,9 +528,8 @@ func (p *Persister) VerifyAddress(ctx context.Context, code string) error {
 }
 
 func (p *Persister) UpdateVerifiableAddress(ctx context.Context, address *identity.VerifiableAddress) error {
-	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.UpdateVerifiableAddress")
+	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.UpdateVerifableAddress")
 	defer span.End()
-
 	address.NID = corp.ContextualizeNID(ctx, p.nid)
 	address.Value = stringToLowerTrim(address.Value)
 	return p.update(ctx, address)
